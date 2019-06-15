@@ -1,23 +1,39 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Home from './views/Home.vue'
+import store from './store'
+
+import Login from './views/auth/Login.vue'
+import DashboardIndex from './views/dashboard/Index'
+import HomeIndex from './views/dashboard/children/homes/Index'
+import CategoriesIndex from './views/dashboard/children/categories/Index'
+import CategoriesNew from './views/dashboard/children/categories/New'
+import CategoriesShow from './views/dashboard/children/categories/Show'
 
 Vue.use(Router)
 
-export default new Router({
+const router = new Router({
   routes: [
+    { path: '/login', name: 'login_path', component: Login, meta: { requiresAuth: false } },
     {
-      path: '/',
-      name: 'home',
-      component: Home
-    },
-    {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (about.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import(/* webpackChunkName: "about" */ './views/About.vue')
+      path: '/', component: DashboardIndex, meta: { requiresAuth: true },
+      children: [
+        { path: '/', name: 'home_path', component: HomeIndex },
+        { path: '/categories', name: 'categories_path', component: CategoriesIndex },
+        { path: '/categories/new', name: 'new_category_path', component: CategoriesNew },
+        { path: '/categories/:id', name: 'category_path', component: CategoriesShow }
+      ]
     }
   ]
 })
+
+router.beforeEach((to, from, next) => {
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (store.state.token) { next() }
+    else { next({ path: '/login' }) }
+  } else {
+    if (store.state.token) { next({ path: '/' }) }
+    else { next() }
+  }
+})
+
+export default router
